@@ -1,8 +1,14 @@
-import { Entity, MikroORM, PrimaryKey, Property } from '@mikro-orm/sqlite';
+import {
+  Entity,
+  MikroORM,
+  PrimaryKey,
+  Property,
+  Embeddable,
+  Embedded,
+} from "@mikro-orm/sqlite";
 
 @Entity()
 class User {
-
   @PrimaryKey()
   id!: number;
 
@@ -12,20 +18,32 @@ class User {
   @Property({ unique: true })
   email: string;
 
+  @Embedded({ entity: () => Role, array: true, nullable: true })
+  roles?: Role[] | null;
+
   constructor(name: string, email: string) {
     this.name = name;
     this.email = email;
   }
+}
 
+@Embeddable()
+class Role {
+  @Property()
+  name: string;
+
+  constructor(name: string) {
+    this.name = name;
+  }
 }
 
 let orm: MikroORM;
 
 beforeAll(async () => {
   orm = await MikroORM.init({
-    dbName: ':memory:',
+    dbName: ":memory:",
     entities: [User],
-    debug: ['query', 'query-params'],
+    debug: ["query", "query-params"],
     allowGlobalContext: true, // only for testing
   });
   await orm.schema.refreshDatabase();
@@ -35,17 +53,13 @@ afterAll(async () => {
   await orm.close(true);
 });
 
-test('basic CRUD example', async () => {
-  orm.em.create(User, { name: 'Foo', email: 'foo' });
+test("basic CRUD example", async () => {
+  orm.em.create(User, { name: "Foo", email: "foo" });
   await orm.em.flush();
   orm.em.clear();
 
-  const user = await orm.em.findOneOrFail(User, { email: 'foo' });
-  expect(user.name).toBe('Foo');
-  user.name = 'Bar';
-  orm.em.remove(user);
-  await orm.em.flush();
-
-  const count = await orm.em.count(User, { email: 'foo' });
-  expect(count).toBe(0);
+  const user = await orm.em.upsert(User, 
+    { name: "Bar", email: "foo", roles: null },
+  );
+  expect(user.name).toBe("Bar");
 });

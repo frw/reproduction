@@ -2,7 +2,6 @@ import {
   Embeddable,
   Embedded,
   Entity,
-  LoadStrategy,
   ManyToOne,
   MikroORM,
   PrimaryKey,
@@ -73,7 +72,7 @@ afterAll(async () => {
   await orm.close(true);
 });
 
-test("basic CRUD example", async () => {
+test("GH5956", async () => {
   const organization = orm.em.create(Organization, { name: "Bar", tag: "bar" });
   orm.em.create(User, { name: "Foo", email: "foo", properties: new Properties(organization) });
   await orm.em.flush();
